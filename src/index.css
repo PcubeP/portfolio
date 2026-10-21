@@ -1,0 +1,362 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   DESIGN TOKENS
+   Deep ink base, warm off-white type, one signal accent plus a
+   per-world --accent that shifts as you travel. Not generic black,
+   not purple neon.
+   ============================================================ */
+:root {
+  --ink: 8 9 12;          /* near-black, faint blue */
+  --surface: 14 16 21;
+  --raised: 20 23 30;
+  --line: 42 46 56;
+  --fg: 233 230 222;      /* warm off-white */
+  --dim: 138 142 152;
+  --faint: 84 88 98;
+  --signal: 255 91 46;    /* fixed brand signal (warm) */
+  --accent: 255 91 46;    /* per-world, animated via JS */
+
+  --step: clamp(0.9rem, 0.85rem + 0.3vw, 1.05rem);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--ink));
+  color: rgb(var(--fg));
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: var(--step);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection { background: rgb(var(--accent)); color: rgb(var(--ink)); }
+
+/* Accent transitions smoothly as chapters change */
+:root { transition: --accent 600ms linear; }
+
+/* ---- Ambient background layers ---------------------------- */
+.bg-grain::before {
+  content: '';
+  position: fixed;
+  inset: -200%;
+  width: 400%;
+  height: 400%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  animation: grain-drift 0.35s steps(2) infinite;
+}
+@keyframes matrix-fall {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(200%); }
+}
+
+@keyframes grain-drift {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-3px, 2px); }
+  40%  { transform: translate(2px, -3px); }
+  60%  { transform: translate(-2px, 3px); }
+  80%  { transform: translate(3px, -2px); }
+  100% { transform: translate(0, 0); }
+}
+
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02) 0px,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.5;
+}
+
+/* ---- Typography helpers ----------------------------------- */
+.font-display { font-family: 'Space Grotesk', sans-serif; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+.font-serif { font-family: 'Fraunces', Georgia, serif; }
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgb(var(--dim));
+}
+
+.hairline { border-color: rgb(var(--line)); }
+
+/* Brutalist block */
+.block-brutal {
+  border: 1px solid rgb(var(--line));
+  background: rgb(var(--surface));
+}
+
+/* Accent glow used sparingly */
+.accent-glow {
+  box-shadow: 0 0 0 1px rgb(var(--accent) / 0.4), 0 0 40px -12px rgb(var(--accent) / 0.5);
+}
+
+/* Text stroke for oversized outline type */
+.text-outline {
+  -webkit-text-stroke: 1px rgb(var(--fg) / 0.55);
+  color: transparent;
+}
+
+/* Focus visibility — never removed, always obvious */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Skip link */
+.skip-link {
+  position: fixed;
+  left: 12px;
+  top: -60px;
+  z-index: 200;
+  background: rgb(var(--accent));
+  color: rgb(var(--ink));
+  padding: 10px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  transition: top 160ms ease;
+}
+.skip-link:focus { top: 12px; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: rgb(var(--ink)); }
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--line));
+  border: 2px solid rgb(var(--ink));
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent) / 0.6); }
+
+/* Placeholder marker — makes unfilled content obvious */
+.ph {
+  position: relative;
+  color: rgb(var(--dim));
+}
+.ph::selection { background: rgb(var(--accent) / 0.4); }
+
+/* ============================================================
+   REDUCED MOTION — honour the OS preference. Kill transforms,
+   parallax and looping animation; keep opacity + content.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .scanlines::after,
+  .bg-grain::before { display: none; }
+}
+
+/* Section rhythm */
+.chapter {
+  position: relative;
+  z-index: 3;
+  min-height: 100svh;
+  padding: clamp(4rem, 10vh, 9rem) clamp(1.25rem, 5vw, 6rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  scroll-margin-top: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 100svh;
+}
+
+.wrap { width: min(1200px, 100%); margin-inline: auto; }
+
+/* ============================================================
+   CUSTOM CURSOR — hide the native cursor only when our reactive
+   cursor is active (fine pointer + motion allowed). Keyboard focus
+   and touch are unaffected.
+   ============================================================ */
+.has-custom-cursor,
+.has-custom-cursor * {
+  cursor: none !important;
+}
+
+/* Interactive elements get a subtle press feedback everywhere */
+a, button, [role='button'], [data-cursor] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Utility: gentle mouse-parallax layers read the smoothed pointer vars */
+.parallax {
+  transform: translate3d(calc(var(--pxn, 0) * var(--par, 12px)), calc(var(--pyn, 0) * var(--par, 12px)), 0);
+  transition: transform 120ms linear;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .parallax { transform: none; }
+}
+
+/* ============================================================
+   THE WORLD — a single fixed-viewport WebGL canvas that owns all
+   visual storytelling. It is a SIBLING of <main>, a direct child of
+   the root, so `position: fixed` resolves against the viewport (a
+   transform/filter on <main> would otherwise become its containing
+   block and distort it). Sits at z-2: above the ambient background
+   layers, below the readable content landmarks at z-3.
+   ============================================================ */
+.world-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  /* raycast hotspots need pointer events; wheel/scroll is never
+     captured by r3f, so the page still scrolls through the canvas */
+  touch-action: pan-y;
+}
+
+/* ============================================================
+   SEMANTIC CONTENT LAYER — the DOM <section> landmarks inside
+   <main>. Their stacked heights define the scroll length that
+   drives the camera; the readable copy inside each is present for
+   assistive tech + SEO but visually hidden while the world flies
+   (the world IS the interface). Under reduced motion the copy is
+   revealed as a normal, readable page over the frozen diorama.
+   ============================================================ */
+.world-section {
+  position: relative;
+  z-index: 3;
+  /* let clicks reach the 3D hotspots on the canvas beneath; page scroll is
+     window-level and unaffected. Re-enabled for readable copy below. */
+  pointer-events: none;
+}
+.world-copy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Reveal the content as a readable page; freeze the world behind it. */
+  .world-copy {
+    position: relative;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+    max-width: 46rem;
+    margin-inline: auto;
+    padding: clamp(4rem, 10vh, 9rem) clamp(1.25rem, 5vw, 6rem);
+    pointer-events: auto;
+  }
+}
+
+/* ============================================================
+   CINEMATIC FRAME — permanent anamorphic letterbox bars + a lens
+   vignette, so the whole site reads like it's being projected
+   rather than rendered. Corner readouts live inside the bars.
+   ============================================================ */
+.lens-vignette {
+  background: radial-gradient(ellipse 78% 62% at 50% 45%, transparent 55%, rgb(var(--ink) / 0.6) 100%);
+}
+
+.cine-bar {
+  position: absolute;
+  inset-inline: 0;
+  background: rgb(var(--ink));
+}
+.cine-bar::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--accent) / 0.55), transparent);
+}
+.cine-bar-top { top: 0; }
+.cine-bar-top::after { bottom: 0; }
+.cine-bar-bottom { bottom: 0; }
+.cine-bar-bottom::after { top: 0; }
+
+/* Reticle cursor ring spin */
+@keyframes cursor-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cine-bar { transition: none !important; }
+}
+
+/* ============================================================
+   CRT — the Pop-Culture television. Curved bezel, scanlines,
+   phosphor vignette + flicker. Driven by the pinned power-on in
+   PopCultureChapter; the helpers below are the static dressing.
+   ============================================================ */
+.crt-screen {
+  border-radius: 18px / 12px;
+  background: #05060a;
+  box-shadow:
+    inset 0 0 60px 12px rgb(0 0 0 / 0.8),
+    inset 0 0 4px 1px rgb(255 255 255 / 0.08),
+    0 30px 80px -20px rgb(0 0 0 / 0.9);
+}
+.crt-scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgb(0 0 0 / 0.28) 0,
+    rgb(0 0 0 / 0.28) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: multiply;
+  animation: crt-flicker 5.5s steps(60) infinite;
+}
+.crt-vignette {
+  border-radius: inherit;
+  background: radial-gradient(ellipse 92% 88% at 50% 50%, transparent 58%, rgb(0 0 0 / 0.75) 100%);
+}
+@keyframes crt-flicker {
+  0%, 96%, 100% { opacity: var(--crt-flicker-base, 1); }
+  97% { opacity: 0.82; }
+  98% { opacity: 1; }
+  99% { opacity: 0.9; }
+}
+@keyframes crt-roll {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-scanlines { animation: none; }
+}
